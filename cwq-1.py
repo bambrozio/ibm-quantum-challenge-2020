@@ -100,6 +100,7 @@ from qiskit.chemistry.components.initial_states import HartreeFock
 from qiskit.chemistry.components.variational_forms import UCCSD
 from qiskit.chemistry.drivers import PySCFDriver 
 from qiskit.chemistry.core import Hamiltonian, QubitMappingType
+from pyscf.lib import param
 # %%
 molecule = 'H .0 .0 -{0}; Li .0 .0 {0}'
 distances = np.arange(0.5, 4.25, 0.25)
@@ -136,20 +137,13 @@ for i, d in enumerate(distances):
                      two_qubit_reduction=operator._two_qubit_reduction)
     algo = VQE(qubit_op, var_form, optimzer, aux_operators=aux_ops)
 
-    vqe_result = algo.run(QuantumInstance(BasicAer.get_backend('statevector_simulator'))
+    vqe_result = algo.run(QuantumInstance(BasicAer.get_backend('statevector_simulator')))
     vqe_result = operator.process_algorithm_result(vqe_result)
 
     exact_energies.append(exact_result.energy)
     vqe_energies.append(vqe_result.energy)
     hf_energies.append(vqe_result.hartree_fock_energy)
 
-# TODO: Fix the error. Requested help at: #qiskitters: https://qiskit.slack.com/archives/C9YTUV077/p1604862094095100
-# for i, d in enumerate(distances):...
-#   File "<ipython-input-29-b9786e9f45d1>", line 31
-#     vqe_result = operator.process_algorithm_result(vqe_result)
-#     ^
-# SyntaxError: invalid syntax
-    
 # %%
 pylab.plot(distances, hf_energies, label='Hartree-Fock')
 pylab.plot(distances, vqe_energies, 'o', label='VQE')
@@ -159,4 +153,4 @@ pylab.xlabel('Interatomic distance')
 pylab.ylabel('Energy')
 pylab.title('LiH Ground State Energy')
 pylab.legend(loc='upper right')
-# %%
+
