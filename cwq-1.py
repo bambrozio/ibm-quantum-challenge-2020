@@ -2,6 +2,8 @@
 ## Jin-Sung Kim, PhD.
 # Research Staff Member, IBM Quantum.
 # YouTube playlist: https://www.youtube.com/playlist?list=PLOFEBzvs-VvrhKYASly1BXo1AdPyoCsor
+#
+# Note: Make sure to restart your Jupyter Kernel before executing each Video scope code.
 
 #%%
 # Youtube video 2: https://www.youtube.com/watch?v=iMCphGJWVSE&list=PLOFEBzvs-VvrhKYASly1BXo1AdPyoCsor&index=2
@@ -100,7 +102,6 @@ from qiskit.chemistry.components.initial_states import HartreeFock
 from qiskit.chemistry.components.variational_forms import UCCSD
 from qiskit.chemistry.drivers import PySCFDriver 
 from qiskit.chemistry.core import Hamiltonian, QubitMappingType
-from pyscf.lib import param
 # %%
 molecule = 'H .0 .0 -{0}; Li .0 .0 {0}'
 distances = np.arange(0.5, 4.25, 0.25)
@@ -143,6 +144,8 @@ for i, d in enumerate(distances):
     exact_energies.append(exact_result.energy)
     vqe_energies.append(vqe_result.energy)
     hf_energies.append(vqe_result.hartree_fock_energy)
+
+# TODO: Fix-me. Issue logged: https://quantumcomputing.stackexchange.com/questions/14537/typeerror-numpyminimumeigensolver-object-is-not-subscriptable
 
 # %%
 pylab.plot(distances, hf_energies, label='Hartree-Fock')
