@@ -122,7 +122,9 @@ for i, d in enumerate(distances):
     qubit_op, aux_ops = operator.run(qmolecule)
 
     # exact classical result
-    exact_result = NumPyMinimumEigensolver(qubit_op, aux_operators=aux_ops)
+    # exact_result = NumPyMinimumEigensolver(qubit_op, aux_operators=aux_ops).run()
+    exact_result = NumPyMinimumEigensolver(qubit_op, aux_operators=aux_ops).compute_minimum_eigenvalue()
+
     exact_result = operator.process_algorithm_result(exact_result)
 
     # VQE
@@ -145,9 +147,14 @@ for i, d in enumerate(distances):
     vqe_energies.append(vqe_result.energy)
     hf_energies.append(vqe_result.hartree_fock_energy)
 
-# TODO: Fix-me. Issue logged: https://quantumcomputing.stackexchange.com/questions/14537/typeerror-numpyminimumeigensolver-object-is-not-subscriptable
-
 # %%
+# Cell above takes hours to generate the arrays below. 
+# print(vqe_energies)
+# [-7.039732392758102, -7.571892648232261, -7.782242393472553, -7.8602117471410775, -7.881015701737517, -7.876063064463558, -7.860153185774109, -7.841042349668195, -7.823076363165138, -7.8086123594080705, -7.798363283916963, -7.791753027217073, -7.78771682817007, -7.785319601540412, -7.783918289419224]
+# print(hf_energies)
+# [-7.02841009454194, -7.556721660246124, -7.767362135748564, -7.844905315573962, -7.863357621535116, -7.853839601840507, -7.830905584637074, -7.801938957048707, -7.770873669221911, -7.740000740013314, -7.710829900217224, -7.684376423067878, -7.661201601515233, -7.641453865325337, -7.624975630131314]
+# print(exact_energies)
+# [-7.039732521635205, -7.571892675243001, -7.782242402637011, -7.860211753123078, -7.881015715646996, -7.876063072528085, -7.860153207378774, -7.841042712184118, -7.8230766421340965, -7.808612396387237, -7.7983634309151295, -7.791753253612651, -7.787716973466147, -7.785319717061217, -7.783918466113922]
 pylab.plot(distances, hf_energies, label='Hartree-Fock')
 pylab.plot(distances, vqe_energies, 'o', label='VQE')
 pylab.plot(distances, exact_energies, 'r', label='Exact')
@@ -157,3 +164,5 @@ pylab.ylabel('Energy')
 pylab.title('LiH Ground State Energy')
 pylab.legend(loc='upper right')
 
+
+# %%
