@@ -22,11 +22,11 @@
 # 
 # [<< Click here to communicate with Dr. Ryoko through the web cam >>](https://youtu.be/eLw7fWb2xv4)
 # %% [markdown]
-# # Week1-A: Adder in Quantum Circuits
+# # Week1-A: Adder in Quantum qcs
 # 
-# Hi! Welcome to our lab. This week, we will start by learning how to perform simple additions using quantum circuits.<br/>
+# Hi! Welcome to our lab. This week, we will start by learning how to perform simple additions using quantum qcs.<br/>
 # 
-# Just like in classical computation, where you can combine different logical gates (e.g., AND, OR, XOR, etc.) to create binary adders, you can make adders with quantum circuits as well.
+# Just like in classical computation, where you can combine different logical gates (e.g., AND, OR, XOR, etc.) to create binary adders, you can make adders with quantum qcs as well.
 # %% [markdown]
 # Before starting the exercises, run the first cell below by clicking on it and then pressing 'shift' + 'enter'. This is the general way to execute a code cell in a Jupyter notebook environment that you are using now. While it is running, you will see `In [*]`: in the top left of that cell. Once it finishes running, you will see a number instead of the star, which indicates how many cells you've run. You can find more information about Jupyter notebooks here: https://qiskit.org/textbook/ch-prerequisites/python-and-jupyter-notebooks.html.
 
@@ -45,8 +45,8 @@ IBMQ.save_account(os.environ['MY_IBM_QUANTUM_API_TOKEN'])
 IBMQ.load_account()
 
 # %% [markdown]
-# ### What are quantum circuits?
-# Quantum circuits are models for quantum computation in which a computation is a sequence of quantum gates. Let's take a look at some of the popular quantum gates.
+# ### What are quantum qcs?
+# Quantum qcs are models for quantum computation in which a computation is a sequence of quantum gates. Let's take a look at some of the popular quantum gates.
 # %% [markdown]
 # ### X Gate
 # An X gate equates to a rotation around the X-axis of the Bloch sphere by $\pi$ radians.
@@ -65,7 +65,7 @@ qc.x(q[0])
 qc.draw(output='mpl')
 
 # %% [markdown]
-# Note: There is a new syntax that omits `Quantum Register` , but in this challenge, we will use the above syntax because it is easier to understand the algorithms of complex quantum circuits. (You can see the new notation [here](https://qiskit.org/documentation/stubs/qiskit.circuit.QuantumCircuit.html?highlight=quantumcircuit#qiskit.circuit.QuantumCircuit).）
+# Note: There is a new syntax that omits `Quantum Register` , but in this challenge, we will use the above syntax because it is easier to understand the algorithms of complex quantum qcs. (You can see the new notation [here](https://qiskit.org/documentation/stubs/qiskit.qc.QuantumCircuit.html?highlight=QuantumCircuit#qiskit.qc.QuantumCircuit).）
 
 # %%
 # Let's see the result
@@ -210,7 +210,7 @@ qc.draw(output='mpl')
 # |1|0|
 
 # %%
-# Create a Quantum Circuit with 1 quantum register and 1 classical register
+# Create a Quantum qc with 1 quantum register and 1 classical register
 q = QuantumRegister(1)
 c = ClassicalRegister(1)
 qc = QuantumCircuit(q,c)
@@ -309,20 +309,37 @@ qc.draw(output='mpl')
 # |1|1|0|
 
 # %%
-q = QuantumRegister(3)
+q = QuantumRegister(1)
 c = ClassicalRegister(1)
 qc = QuantumCircuit(q,c)
 
-qc.cx(q[1], q[2])
-qc.cx(q[0], q[2])
-qc.ccx(q[0], q[1], q[2])
-qc.x(q[2])
-qc.measure(q[2], c[0])
+# qc.cx(q[1], q[2])
+# qc.cx(q[0], q[2])
+# qc.ccx(q[0], q[1], q[2])
+# qc.x(q[2])
+qc.h(q[0])
+qc.measure(q[0], c[0])
 qc.draw(output='mpl')
+
+#%%
+# Execute the qc:
+backend = Aer.get_backend('qasm_simulator')
+job = execute(qc, backend, shots=1000)
+result = job.result()
+count =result.get_counts()
+print(count)
+
+#%%
+print(c[0])
+
+#%% Bloch sphere:
+backend = Aer.get_backend('statevector_simulator')
+result = execute(qc, backend).result().get_statevector(qc, decimals=3)
+plot_bloch_multivector(result)
 
 # %% [markdown]
 # # Adder
-# An adder is a digital logic circuit that performs addition of numbers. 
+# An adder is a digital logic qc that performs addition of numbers. 
 # 
 # In this example, we are going to take a look at the simplest adders, namely half adder and full adder.
 # %% [markdown]
@@ -346,17 +363,19 @@ qc.draw(output='mpl')
 # We denote our quantum register as 'q', classical registers as 'c', assign inputs A and B to q[0] and q[1], the sum output S and  carry output C to q[2] and q[3].
 
 # %%
-#Define registers and a quantum circuit
+#Define registers and a quantum qc
 q = QuantumRegister(4)
 c = ClassicalRegister(2)
 qc = QuantumCircuit(q,c)
 
 #XOR
+# ..where the output S is a result of operating an XOR against A and B.
 qc.cx(q[1], q[2])
 qc.cx(q[0], q[2])
 qc.barrier()
 
 #AND
+# carry output, C, is a result of operating an AND gate against A and B, 
 qc.ccx(q[0], q[1], q[3])
 qc.barrier()
 
@@ -372,20 +391,51 @@ count =result.get_counts()
 print(count)
 qc.draw(output='mpl')
 
+#%% Bloch sphere:
+backend = Aer.get_backend('statevector_simulator')
+result = execute(qc, backend).result().get_statevector(qc, decimals=3)
+plot_bloch_multivector(result)
+
+##################################
+# Half adder:
+#Define registers and a quantum qc
+q = QuantumRegister(4)
+c = ClassicalRegister(2)
+qc = QuantumCircuit(q,c)
+A,B,S,C = q[0],q[1],q[2],q[3]
+
+#XOR
+# ..where the output S is a result of operating an XOR against A and B.
+qc.cx(B, S)
+qc.cx(A, S)
+qc.barrier()
+
+#AND
+# carry output, C, is a result of operating an AND gate against A and B, 
+qc.ccx(A, B, C)
+qc.barrier()
+
+#Sum
+qc.measure(S, c[0])
+#Carry out
+qc.measure(C, c[1])
+
+##################################
+
 # %% [markdown]
 # ## <span style="color: red; ">IMPORTANT: How to calculate Quantum Costs using an Unroller</span>
-# There are several ways to evaluate an efficiency of a program (quantum circuit). Such as:
+# There are several ways to evaluate an efficiency of a program (quantum qc). Such as:
 # 
 # 1. Number of quantum bits
 # 2. Depth
 # 3. Program execution speed (Runtime)
 # 4. Number of instructions
 # 
-# These are all important factors that impact the results and throughput of quantum computation. In this particular challenge, we will use the number of instructions to evaluate the efficiency of our program. We will call the number of instructions "cost" throughout this challenge and will use the following formula to evaluate the cost of a circuit.
+# These are all important factors that impact the results and throughput of quantum computation. In this particular challenge, we will use the number of instructions to evaluate the efficiency of our program. We will call the number of instructions "cost" throughout this challenge and will use the following formula to evaluate the cost of a qc.
 # 
 # Cost $=$ Single-qubit gates $+$ CX gates $\times 10$
 # 
-# Any given quantum circuit can be decomposed into single-qubit gates (an instruction given to a single qubit) and two-qubit gates. With the current Noisy Intermediate-Scale Quantum (NISQ) devices, CX gate error rates are generally 10x higher than a single qubit gate. Therefore, we will weigh CX gates 10 times more than a single-qubit gate for cost evaluation.
+# Any given quantum qc can be decomposed into single-qubit gates (an instruction given to a single qubit) and two-qubit gates. With the current Noisy Intermediate-Scale Quantum (NISQ) devices, CX gate error rates are generally 10x higher than a single qubit gate. Therefore, we will weigh CX gates 10 times more than a single-qubit gate for cost evaluation.
 # 
 # You can evaluate gate costs by yourself by using a program called "Unroller."
 # To elaborate on this, let's take a look at the example below.
@@ -410,22 +460,22 @@ qc.draw(output='mpl')
 qc.count_ops()
 
 # %% [markdown]
-# As you can see, this quantum circuit contains a Hadamard gate, a CX gate and CCX gates. By using qiskit.transpiler and importing PassManager, we can decompose this circuit into gates specified by the Unroller as shown below. In this case, into U3 gates and CX gates.
+# As you can see, this quantum qc contains a Hadamard gate, a CX gate and CCX gates. By using qiskit.transpiler and importing PassManager, we can decompose this qc into gates specified by the Unroller as shown below. In this case, into U3 gates and CX gates.
 
 # %%
 from qiskit.transpiler import PassManager
 from qiskit.transpiler.passes import Unroller
 pass_ = Unroller(['u3', 'cx'])
 pm = PassManager(pass_)
-new_circuit = pm.run(qc) 
-new_circuit.draw(output='mpl')
+new_qc = pm.run(qc) 
+new_qc.draw(output='mpl')
 
 
 # %%
-new_circuit.count_ops()
+new_qc.count_ops()
 
 # %% [markdown]
-# Thus, the cost of this circuit is $19+13\times10=149$.
+# Thus, the cost of this qc is $19+13\times10=149$.
 # 
 # You can easily check how any arbitrary gate can be decomposed by using the Unroller. So, if you are interested in how a particular two-qubit gate or three-qubit gate can be decomposed, we encourage you to try it yourself. In the example below, we used the Unroller to decompose a CCX gate into U3 gates and CX gates. 
 
@@ -440,12 +490,12 @@ qc.draw(output='mpl')
 # %%
 pass_ = Unroller(['u3', 'cx'])
 pm = PassManager(pass_)
-new_circuit = pm.run(qc) 
-new_circuit.draw(output='mpl')
+new_qc = pm.run(qc) 
+new_qc.draw(output='mpl')
 
 
 # %%
-new_circuit.count_ops()
+new_qc.count_ops()
 
 # %% [markdown]
 # So, the total cost of a CCX gate can be calculated as $9+6\times10=69$.
@@ -476,9 +526,9 @@ new_circuit.count_ops()
 from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit
 from qiskit import IBMQ, Aer, execute
 
-##### build your quantum circuit here
+##### build your quantum qc here
 
-#Define registers and a quantum circuit
+#Define registers and a quantum qc
 q = QuantumRegister(5)
 c = ClassicalRegister(4)
 qc = QuantumCircuit(q,c)
@@ -497,7 +547,7 @@ qc.measure(q[2], c[0])
 #Carry out
 qc.measure(q[3], c[1])
 
-# execute the circuit by qasm_simulator
+# execute the qc by qasm_simulator
 backend = Aer.get_backend('qasm_simulator')
 job = execute(qc, backend, shots=1000)
 result = job.result()
@@ -519,6 +569,220 @@ submit_ex1a(qc)
 
 
 # %%
+#######################################
+#######################################
+# Attempt 1: (failed)
+from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit
+from qiskit import IBMQ, Aer, execute
+
+##### build your quantum qc here
+
+#Define registers and a quantum qc
+q = QuantumRegister(5)
+c = ClassicalRegister(2)
+qc = QuantumCircuit(q,c)
+A,B,X,S,C = q[0],q[1],q[2],q[3],q[4]
+
+#XOR
+# ..where the output S is a result of operating an XOR against A and B.
+qc.cx(B, X)
+qc.cx(A, X)
+qc.barrier()
+
+# ..where the output X is a result of operating an XOR against A and B.
+qc.cx(X, S)
+qc.cx(B, S)
+qc.barrier()
+
+#AND
+# carry output, C, is a result of operating an AND gate against A and B, 
+qc.ccx(B, X, C)
+qc.barrier()
+
+#Sum
+qc.measure(S, c[0])
+#Carry out
+qc.measure(C, c[1])
+
+# execute the qc by qasm_simulator
+backend = Aer.get_backend('qasm_simulator')
+job = execute(qc, backend, shots=1000)
+result = job.result()
+count =result.get_counts()
+print(count)
+qc.draw(output='mpl')
+
+# %%
+#######################################
+#######################################
+# Attempt 2: (failed)
+from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit
+from qiskit import IBMQ, Aer, execute
+
+##### build your quantum qc here
+
+#Define registers and a quantum qc
+q = QuantumRegister(4)
+c = ClassicalRegister(2)
+qc = QuantumCircuit(q,c)
+A,B,S,C = q[0],q[1],q[2],q[3]
+
+#XOR
+# ..where the output S is a result of operating an XOR against A and B.
+qc.cx(B, S)
+qc.cx(A, S)
+qc.barrier()
+
+#AND
+# carry output, C, is a result of operating an AND gate against A and B, 
+qc.ccx(A, B, C)
+qc.barrier()
+
+#Sum
+qc.measure(S, c[0])
+#Carry out
+qc.measure(C, c[1])
+
+# execute the qc by qasm_simulator
+backend = Aer.get_backend('qasm_simulator')
+job = execute(qc, backend, shots=1000)
+result = job.result()
+count =result.get_counts()
+print(count)
+qc.draw(output='mpl')
 
 
+#%% OR Gate
+q = QuantumRegister(3)
+c = ClassicalRegister(1)
+qc = QuantumCircuit(q,c)
 
+qc.cx(q[1], q[2])
+qc.cx(q[0], q[2])
+qc.ccx(q[0], q[1], q[2])
+qc.measure(q[2], c[0])
+qc.draw(output='mpl')
+# %%
+#####
+# Adapted from: https://www.quantum-inspire.com/kbase/full-adder/
+## Faild!
+q = QuantumRegister(4)
+c = ClassicalRegister(4)
+qc = QuantumCircuit(q, c)
+
+qc.x(q[0]) # Comment this line to make Qbit0 = |0>
+# qc.x(q[1]) # Comment this line to make Qbit1 = |0>
+qc.x(q[2]) # Comment this line to make Qbit2 = |0> ( carry-in bit )
+
+qc.ccx(q[0], q[1], q[3])
+qc.cx(q[0], q[1])
+qc.ccx(q[1], q[2], q[3])
+qc.cx(q[1], q[2])
+qc.cx(q[0], q[1])
+
+qc.x(0) # Comment this line to make Qbit0 = |0>
+# qc.x(1) # Comment this line to make Qbit1 = |0>
+qc.x(2) # Comment this line to make Qbit2 = |0> ( carry-in bit )
+
+#Sum
+qc.measure(q[2], c[0])
+#Carry out
+qc.measure(q[3], c[1])
+
+# qc.measure(q[1], c[1])
+# qc.measure(q[4], c[4])
+
+# execute the circuit by qasm_simulator
+backend = Aer.get_backend('qasm_simulator')
+job = execute(qc, backend, shots=1000)
+result = job.result()
+count =result.get_counts()
+print(count)
+qc.draw(output='mpl')
+
+#%%
+# Performance:
+from qiskit.transpiler import PassManager
+from qiskit.transpiler.passes import Unroller
+pass_ = Unroller(['u3', 'cx'])
+pm = PassManager(pass_)
+new_circuit = pm.run(qc) 
+new_circuit.draw(output='mpl')
+
+#%%
+new_circuit.count_ops()
+#%%
+22+(15*10)
+
+#%% Check your answer using following code
+from qc_grader import grade_ex1a
+grade_ex1a(qc)
+
+# %%
+# Attempt 3 - Success!!!! 
+# From: https://gist.github.com/GDLMadushanka/17bb2ddc9450054abcf1ab04779e2182
+# Grading your answer. Please wait...
+
+# Congratulations 🎉! Your answer is correct.
+# Your score is 252.
+# Feel free to submit your answer.
+
+# Submitting your answer. Please wait...
+
+# Success 🎉! Your answer has been submitted.
+from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit
+from qiskit import IBMQ, Aer, execute
+
+##### build your quantum circuit here
+
+# Creating a circuit with 8 quantum bits and 2 classical bits
+qc = QuantumCircuit(8,2)
+
+# Preparing inputs
+qc.x(0) # Comment this line to make Qbit0 = |0>
+# qc.x(1) # Comment this line to make Qbit1 = |0>
+qc.x(2) # Comment this line to make Qbit2 = |0> ( carry-in bit )
+qc.barrier()
+
+# AND gate1 implementation
+qc.ccx(0,1,3)
+qc.barrier()
+
+# OR gate1 implementation
+qc.cx(0,4) 
+qc.cx(1,4)
+qc.barrier()
+
+# OR gate2 implementation
+qc.cx(2,5) 
+qc.cx(4,5)
+qc.barrier()
+
+# AND gate2 implementation
+qc.ccx(2,4,6)
+qc.barrier()
+
+# OR gate implementation
+qc.x(3)
+qc.x(6)
+qc.ccx(3,6,7)
+qc.x(7)
+qc.barrier()
+
+# Measuring and put result to classical bit
+qc.measure(5,0) # ( sum )
+qc.measure(7,1) # ( carry-out )
+qc.draw(output='mpl')
+
+# Run the experimient 1024 times and get stats
+# counts = execute(qc,Aer.get_backend('qasm_simulator')).result().get_counts()
+# print(counts)
+
+# execute the circuit by qasm_simulator
+backend = Aer.get_backend('qasm_simulator')
+job = execute(qc, backend, shots=1000)
+result = job.result()
+count =result.get_counts()
+print(count)
+qc.draw(output='mpl')
+# %%
