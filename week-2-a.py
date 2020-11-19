@@ -62,114 +62,85 @@ Image('lights_out_prob.png')
 
 # %% [markdown]
 # ## Hint
-# You’ll need a more complex oracle than the “Week1-B oracle” to solve this problem. 
-# The added auxiliary qubits will help you design the oracle part, but they need to be 
-# handled with care.  At the end of the oracle part, all auxiliary qubits must be returned 
-# to their initial state (this operation is sometimes called Uncomputation). 
-# [Week 3 of last year’s IBM Quantum Challenge](https://github.com/quantum-challenge/2019/blob/master/problems/week3/week3_en.ipynb) 
-# will support your understanding of this concept. 
+# You’ll need a more complex oracle than the “Week1-B oracle” to solve this problem. The added auxiliary qubits will help you design the oracle part, but they need to be handled with care.  At the end of the oracle part, all auxiliary qubits must be returned to their initial state (this operation is sometimes called Uncomputation). [Week 3 of last year’s IBM Quantum Challenge](https://github.com/quantum-challenge/2019/blob/master/problems/week3/week3_en.ipynb) will support your understanding of this concept. 
 # 
-# If you are not sure about the optimal number of iterations for Grover's algorithm, solve 
-# [this quiz](https://github.com/qiskit-community/IBMQuantumChallenge2020/tree/main/quizzes/quiz_1) and talk to Dr. Ryoko(@ryoko) in the [Qiskit slack](qiskit.slack.com) via direct message. You can get important formulas of the theoretical aspects of week 1-B.
+# If you are not sure about the optimal number of iterations for Grover's algorithm, solve [this quiz](https://github.com/qiskit-community/IBMQuantumChallenge2020/tree/main/quizzes/quiz_1) and talk to Dr. Ryoko(@ryoko) in the [Qiskit slack](qiskit.slack.com) via direct message. You can get important formulas of the theoretical aspects of week 1-B.
 
 # %%
 # The starting pattern is represented by this list of numbers.
 # Please use it as an input for your solution.
+from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister, BasicAer, execute
+import numpy as np
 lights = [0, 1, 1, 1, 0, 0, 1, 1, 1]
 
-#%%
-##############################################################
-from qiskit import IBMQ, BasicAer, Aer, QuantumCircuit, execute
-import matplotlib.pyplot as plt
-get_ipython().run_line_magic('matplotlib', 'inline')
-import numpy as np
-
-# #%%
-# # Create a oracle circuit to flip the qubits we are looking for (CZ gate does that).
-# # To do the amplifitude, we will use the oracle + reflection = Grover's diffusion operator
-# oracle = QuantumCircuit(2, name='oracle')
-# oracle.cz(0,1)
-# oracle.to_gate()
-# oracle.draw(output="mpl")
-
-# #%%
-# # check if the oracle is doing what we expect (S) for superposition:
-# backend = Aer.get_backend('statevector_simulator')
-# grover_circ = QuantumCircuit(2, 2)
-# grover_circ.h([0,1]) # Superposition S
-# grover_circ.append(oracle, [0,1]) # to execute simutaneously
-# grover_circ.draw(output="mpl")
-
-# #%%
-# # exec in a simulator:
-# job = execute(grover_circ, backend)
-# result = job.result()
-
-# #%%
-# sv = result.get_statevector()
-# # we have 00, 01, 10, 11
-# # 11 is the winner, because our oracle applied the cz at (0,1)
-# # [ 0.5+0.j,  0.5+0.j,  0.5+0.j, -0.5+0.j] Fliped the last one.
-# np.around(sv, 2)
-
-# #%% reflection amplifitude amplification
-# reflection = QuantumCircuit(2, name='reflection')
-# reflection.h([0,1])
-# reflection.z([0,1])
-# reflection.cz(0,1)
-# reflection.h([0,1])
-# reflection.to_gate()
-
-# #%% 
-# reflection.draw(output="mpl")
-
-#%% 
-# put all together:
-oracle = QuantumCircuit(2, name='oracle')
-oracle.cz(0,1)
-oracle.to_gate()
-
-reflection = QuantumCircuit(2, name='reflection')
-reflection.h([0,1])
-reflection.z([0,1])
-reflection.cz(0,1)
-reflection.h([0,1])
-reflection.to_gate()
-
-backend = BasicAer.get_backend('statevector_simulator')
-grover_circ = QuantumCircuit(2,2)
-grover_circ.h([0,1]) # Superposition S
-grover_circ.append(oracle, [0,1]) # to execute simutaneously
-grover_circ.append(reflection, [0,1]) # to execute simutaneously
-grover_circ.measure([0,1], [0,1])
-
-#%% 
-grover_circ.draw(output="mpl")
-
-#%% 
-# exec in a simulator:
-job = execute(grover_circ, backend, shots=1)
-result = job.result()
-result.get_counts()
-
-#%%
-sv = result.get_statevector()
-# we have 00, 01, 10, 11
-# 11 is the winner, because our oracle applied the cz at (0,1)
-# [0.+0.j, 0.+0.j, 0.+0.j, 1.-0.j] Fliped and amplified the last one.
-np.around(sv, 2)
-
-#%%
-
-#%%
-##############################################################
-
 def week2a_ans_func(lights):
-    ##### build your quantum circuit here
+    nlight = len(lights)
+    size = int(np.sqrt(nlight))
+    r_ispush = QuantumRegister(nlight, "is_push")
+    r_isoff = QuantumRegister(nlight, "is_off")
+    r_oracle = QuantumRegister(1, "oracle")
+    cr_measure = ClassicalRegister(nlight, "m")
+    qc = QuantumCircuit(r_ispush, r_isoff, r_oracle, cr_measure)
 
-    
-    #####  In addition, please make it a function that can solve the problem even with different inputs (lights). We do validation with different inputs.
-    
+    push = [[] for _ in range(nlight)]
+    for i in range(nlight):
+        push[i].append(i)
+        if(i % size):
+            push[i].append(i-1)
+        if((i+1) % size):
+            push[i].append(i+1)
+        if(i-size >= 0):
+            push[i].append(i - size)
+        if(i+size < nlight):
+            push[i].append(i+size)
+
+    # nit
+    N = 1 << nlight
+    theta = np.arcsin(2 * np.sqrt(N-1) / N)
+    nit = int(np.arccos(1 / np.sqrt(N)) / theta)
+
+    # Grover
+    qc.x(r_oracle)
+    qc.h(r_ispush)
+    qc.barrier()
+
+    for _ in range(nit):
+
+        ### Oracle ###
+        for i, light in enumerate(lights):
+            if(not light):
+                qc.x(r_isoff[i])
+        qc.barrier()
+
+        for i, q_ispush in enumerate(r_ispush):
+            for j in push[i]:
+                qc.cx([q_ispush], r_isoff[j])
+        qc.barrier()
+        qc.h(r_oracle)
+        qc.mcx([*r_isoff], *r_oracle)
+        qc.h(r_oracle)
+        qc.barrier()
+        for i, q_ispush in enumerate(reversed(r_ispush)):
+            for j in reversed(push[nlight - i - 1]):
+                qc.cx([q_ispush], r_isoff[j])
+        qc.barrier()
+
+        for i, light in enumerate(lights):
+            if(not light):
+                qc.x(r_isoff[i])
+        qc.barrier()
+        ##############
+
+        qc.h(r_ispush)
+        qc.x(r_ispush)
+        qc.h(r_ispush[-1])
+        qc.mcx([*r_ispush[:nlight-1]], r_ispush[-1])
+        qc.h(r_ispush[-1])
+        qc.x(r_ispush)
+        qc.h(r_ispush)
+        qc.barrier()
+    qc.measure(r_ispush[::-1], cr_measure)
+
     return qc
 
 
@@ -198,5 +169,9 @@ grade_ex2a(job)
 # %%
 # Submit your results by executing following code. You can submit as many times as you like during the period. 
 submit_ex2a(job)
+
+
+# %%
+
 
 
