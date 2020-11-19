@@ -67,6 +67,8 @@ Image('lights_out_prob.png')
 # If you are not sure about the optimal number of iterations for Grover's algorithm, solve [this quiz](https://github.com/qiskit-community/IBMQuantumChallenge2020/tree/main/quizzes/quiz_1) and talk to Dr. Ryoko(@ryoko) in the [Qiskit slack](qiskit.slack.com) via direct message. You can get important formulas of the theoretical aspects of week 1-B.
 
 # %%
+# Kudos to: https://github.com/riuriuriuriu/IBMQuantumchallenge/blob/739a7a349696de1084529e707880829b6d97db66/2020Nov/week-2/lights_out.py
+# 
 # The starting pattern is represented by this list of numbers.
 # Please use it as an input for your solution.
 from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister, BasicAer, execute
@@ -143,6 +145,9 @@ def week2a_ans_func(lights):
 
     return qc
 
+qc = week2a_ans_func(lights)
+# qc.draw(output='mpl')
+qc.draw()
 
 # %%
 # Submission code
