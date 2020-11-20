@@ -429,6 +429,8 @@ def week2b_ans_func(lightout4):
     ###############################################################################################
     return qc
 
+# qc = week2b_ans_func(lightsout4)
+# qc.draw()
 
 
 # %%
