@@ -720,7 +720,7 @@ grade_ex1a(qc)
 
 # %%
 # Attempt 3 - Success!!!! 
-# From: https://gist.github.com/GDLMadushanka/17bb2ddc9450054abcf1ab04779e2182
+# Kudos to: https://gist.github.com/GDLMadushanka/17bb2ddc9450054abcf1ab04779e2182
 # Grading your answer. Please wait...
 
 # Congratulations 🎉! Your answer is correct.

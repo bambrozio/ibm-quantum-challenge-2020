@@ -193,11 +193,242 @@ lightsout4=[[1, 1, 1, 0, 0, 0, 1, 0, 0],[1, 0, 1, 0, 0, 0, 1, 1, 0],[1, 0, 1, 1,
 # - Data storing/writing in *QRAM operation* can be performed in any order. We can reduce the number of gates by taking into account the _hamming distance_ of the address and input data.
 
 # %%
+# Kudos: https://github.com/riuriuriuriu/IBMQuantumchallenge/blob/master/2020Nov/week-2/ex_2b_ja.ipynb
+import numpy as np
+import itertools
+from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister, BasicAer, execute
+
 def week2b_ans_func(lightout4):
     ##### Build your cirucuit here
     ####  In addition, please make it a function that can solve the problem even with different inputs (lightout4). We do validation with different inputs.
+    debug = False
+    nboard = len(lightout4)
+    naddress = int(np.log2(nboard + 1))
+    nlight = len(lightout4[0])
+    size = int(np.sqrt(nlight))
     
+    r_address = QuantumRegister(naddress, 'address')
+    r_ispush = QuantumRegister(nlight, 'is_push')
+    r_isoff = QuantumRegister(nlight, 'is_off')
+    r_oracle = QuantumRegister(1, 'oracle')
+    # r_flag = QuantumRegister(1, 'flag')
+    r_ancilla = QuantumRegister(7,'ancilla')
+    c_measure = ClassicalRegister(naddress, 'measure')
+    c_measure2 = ClassicalRegister(nlight, 'measure2')
+    c_measure3 = ClassicalRegister(nlight, 'measure3')
+    c_measure4 = ClassicalRegister(6, 'measure4')
+    c_measure5 = ClassicalRegister(1, 'measure5')
+    if(debug):
+        qc = QuantumCircuit(r_address, r_ispush, r_isoff, r_oracle, r_flag, r_ancilla, c_measure,c_measure2,c_measure3,c_measure4, c_measure5)
+    else:
+        qc = QuantumCircuit(r_address, r_ispush, r_isoff, r_oracle, r_ancilla, c_measure)
+    
+    push = [[] for _ in range(nlight)]
+    for i in range(nlight):
+        push[i].append(i)
+        if(i % size):
+            push[i].append(i-1)
+        if((i+1) % size):
+            push[i].append(i+1)
+        if(i-size >= 0):
+            push[i].append(i - size)
+        if(i+size < nlight):
+            push[i].append(i + size)  
+    
+    N = 1 << nlight
+    theta = np.arcsin(2 * np.sqrt(N-1)/ N)
+    Grover_nit = int(np.arccos(1 / np.sqrt(N))/ theta)
+    Grover_nit = 2
+
+    
+    qc.h(r_address)
+    qc.x(r_oracle)
+    qc.h(r_oracle)
+    qc.barrier()
+    
+    #### qRAM #####################################################################################
+
+    qc.h(r_ispush)
+    qc.barrier()
+
+    for it in range(Grover_nit):
+        
+        if it == 0:
+            for i_board in range(nboard):
+                for i_address in range(naddress):
+                    if( not (i_board >> i_address & 1)):
+                        qc.x(r_address[i_address])
+                for i, light in enumerate(lightout4[i_board]):
+                    if(not light):
+                        qc.mcx(r_address,r_isoff[i], r_ancilla, mode = 'basic')
+                for i_address in range(naddress):
+                    if( not (i_board >> i_address & 1)):
+                        qc.x(r_address[i_address])
+            qc.barrier()
+        
+        
+        for i, q_ispush in enumerate(r_ispush):
+            for j in push[i]:
+                qc.mcx([q_ispush], r_isoff[j], r_ancilla, mode = 'basic')
+        qc.barrier()
+        
+        qc.mcx([*r_isoff],*r_oracle, r_ancilla ,mode = 'basic')
+        qc.barrier()
+
+        for i, q_ispush in enumerate(r_ispush):
+            for j in push[i]:
+                qc.mcx([q_ispush], r_isoff[j], r_ancilla, mode = 'basic')
+        qc.barrier()
+        '''
+        if it == Grover_nit - 1:
+            for i_board in reversed(range(nboard)):
+                for i_address in range(naddress):
+                    if( not (i_board >> i_address & 1)):
+                        qc.x(r_address[i_address])
+                for i, light in enumerate(lightout4[i_board]):
+                    if(not light):
+                        qc.mcx(r_address,r_isoff[i], r_ancilla, mode = 'basic')
+                for i_address in range(naddress):
+                    if( not (i_board >> i_address & 1)):
+                        qc.x(r_address[i_address])
+            qc.barrier()
+        '''
+        qc.h(r_ispush)
+        qc.x(r_ispush)
+        qc.h(r_ispush[-1])
+        qc.mcx([*r_ispush[:nlight-1]], r_ispush[-1], r_ancilla, mode = 'basic')
+        qc.h(r_ispush[-1])
+        qc.x(r_ispush)
+        qc.h(r_ispush)
+        qc.barrier() 
+
+    for q_ispush in r_ispush:
+        ctr = [q_ispush]
+        for i_ancilla in range(4):
+            qc.mcx(ctr, r_ancilla[i_ancilla])
+            qc.x(r_ancilla[i_ancilla])
+            ctr.append(r_ancilla[i_ancilla])
+        qc.x(r_ancilla[0:4])
+        qc.barrier()
+    
+    ##### Oracle ##################################################################################  
+    # 3 push
+    qc.x(r_ancilla[2])
+    qc.x(r_ancilla[3]) 
+    qc.mcx([*r_ancilla[0:4]], r_oracle)
+    #qc.x(r_ancilla[2])
+    #qc.x(r_ancilla[3])
+    qc.barrier()
+    
+    # 2 push
+    qc.x(r_ancilla[0])
+    #qc.x(r_ancilla[2])
+    #qc.x(r_ancilla[3])
+    qc.mcx([*r_ancilla[0:4]], r_oracle)
+    qc.x(r_ancilla[0])
+    #qc.x(r_ancilla[2])
+    #qc.x(r_ancilla[3])
+    qc.barrier()
+         
+    # 1 push
+    qc.x(r_ancilla[1])
+    #qc.x(r_ancilla[2])
+    #qc.x(r_ancilla[3])
+    qc.mcx([*r_ancilla[0:4]], r_oracle)
+    qc.x(r_ancilla[1])
+    qc.x(r_ancilla[2])
+    qc.x(r_ancilla[3])
+
+    qc.barrier()
+
+    #### qRAM #####################################################################################
+    for q_ispush in reversed(r_ispush):
+        ctr = [q_ispush, *r_ancilla[0:3]]
+        qc.x(r_ancilla[0:4])
+        for i_ancilla in reversed(range(4)):
+            qc.x(r_ancilla[i_ancilla])
+            qc.mcx(ctr, r_ancilla[i_ancilla])
+            ctr.pop(-1)
+        qc.barrier()
+
+    for it in range(Grover_nit):
+        
+        qc.h(r_ispush)
+        qc.x(r_ispush)
+        qc.h(r_ispush[-1])
+        qc.mcx([*r_ispush[:nlight-1]], r_ispush[-1], r_ancilla, mode = 'basic')
+        qc.h(r_ispush[-1])
+        qc.x(r_ispush)
+        qc.h(r_ispush)
+        qc.barrier() 
+        
+        '''
+        if it == 0:
+            for i_board in (range(nboard)):
+                for i_address in range(naddress):
+                    if( not (i_board >> i_address & 1)):
+                        qc.x(r_address[i_address])
+                for i, light in enumerate(lightout4[i_board]):
+                    if(not light):
+                        qc.mcx(r_address,r_isoff[i], r_ancilla, mode = 'basic')
+                for i_address in range(naddress):
+                    if( not (i_board >> i_address & 1)):
+                        qc.x(r_address[i_address])
+        qc.barrier()
+        '''
+        
+        for i, q_ispush in enumerate(r_ispush):
+            for j in push[i]:
+                qc.mcx([q_ispush], r_isoff[j], r_ancilla, mode = 'basic')
+        qc.barrier()
+        
+        qc.mcx([*r_isoff],*r_oracle, r_ancilla, mode = 'basic')
+        qc.barrier()
+
+        for i, q_ispush in enumerate(r_ispush):
+            for j in push[i]:
+                qc.mcx([q_ispush], r_isoff[j], r_ancilla, mode = 'basic')
+        qc.barrier()
+
+        if it == Grover_nit - 1:
+            for i_board in reversed(range(nboard)):
+                for i_address in range(naddress):
+                    if( not (i_board >> i_address & 1)):
+                        qc.x(r_address[i_address])
+                for i, light in enumerate(lightout4[i_board]):
+                    if(not light):
+                        qc.mcx(r_address,r_isoff[i], r_ancilla, mode = 'basic')
+                for i_address in range(naddress):
+                    if( not (i_board >> i_address & 1)):
+                        qc.x(r_address[i_address])
+            qc.barrier()
+        
+    qc.x(r_oracle)
+    qc.h(r_ispush)
+    qc.barrier()
+    
+    #### defusion #################################################################################
+    if(not debug):
+        qc.h(r_address)
+        qc.x(r_address)
+        qc.h(r_address[-1])
+        qc.mcx(r_address[0:-1], r_address[-1], r_ancilla, mode = 'basic')
+        qc.h(r_address[-1])
+        qc.x(r_address)
+        qc.h(r_address)
+        qc.barrier()
+    
+    #### measure ##################################################################################
+    qc.measure(r_address, c_measure)
+    if(debug):
+        qc.measure(r_isoff, c_measure2)
+        qc.measure(r_ispush, c_measure3)
+        qc.measure(r_ancilla, c_measure4)
+        qc.measure(r_flag, c_measure5)
+        
+    ###############################################################################################
     return qc
+
 
 
 # %%
